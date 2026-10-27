@@ -12,7 +12,7 @@ A long-lived dev container for the home server. It runs [OpenChamber](https://op
 | --- | --- |
 | `Dockerfile` | `debian:trixie-slim` with OS packages, system-wide mise and the `dev` user (UID/GID from build args) |
 | `entrypoint.sh` | Sets git identity, runs `mise install`, then starts OpenChamber (or `exec`s the given command) |
-| `mise.toml` | The toolchain: node, bun, uv, ruff, OpenCode, OpenChamber. Mounted as `/etc/mise/config.toml` |
+| `mise.toml` | The toolchain: node, bun, uv, ruff, gh, OpenCode, OpenChamber. Mounted as `/etc/mise/config.toml` |
 | `compose.yaml` | Stack `openchamber`, service `devbox`. Traefik labels, `home` volume, workspace bind mount |
 | `.env.example` | Template for `.env`, which holds the password, bind address, UID/GID and git identity |
 | `.devcontainer/devcontainer.json` | Lets VS Code attach to the running service without ever stopping it |
@@ -55,6 +55,12 @@ Add the public key to GitHub, either as an account SSH key or, to limit it to on
 ```sh
 docker compose exec devbox ssh -T git@github.com
 docker compose exec devbox git clone git@github.com:you/project.git /workspace/project
+```
+
+For the GitHub CLI (PRs, issues), log in once. The token is stored in `~/.config/gh` in the `home` volume:
+
+```sh
+docker compose exec -it devbox gh auth login
 ```
 
 The entrypoint writes `GIT_USER_NAME` and `GIT_USER_EMAIL` to the global git config. It also marks `/workspace/*` as a `safe.directory`.
