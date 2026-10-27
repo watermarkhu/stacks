@@ -1,6 +1,6 @@
 services:
   radarr:
-    image: lscr.io/linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr:latest@sha256:084b3b2ab1d0ef930660727259546a241f2bdf67c9ed085d54bf1486a6887c9b
     container_name: radarr
     environment:
       - TZ=Europe/Amsterdam
