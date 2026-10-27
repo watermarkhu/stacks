@@ -70,7 +70,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Amsterdam
-      - AUTH_METHOD=none
+      - AUTH_METHOD=builtin
       - CALIBRE_WEB_URL=https://grimmory.local.watermarkhu.nl
     volumes:
       - /mnt/NVME/docker/shelfmark-config:/config
