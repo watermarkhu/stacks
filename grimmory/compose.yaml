@@ -1,0 +1,89 @@
+services:
+  grimmory:
+    image: ghcr.io/grimmory-tools/grimmory:latest
+    container_name: grimmory
+    environment:
+      - USER_ID=1000
+      - GROUP_ID=1000
+      - TZ=Europe/Amsterdam
+      - DATABASE_URL=jdbc:mariadb://grimmory-db:3306/grimmory
+      - DATABASE_USERNAME=grimmory
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - SWAGGER_ENABLED=false
+    volumes:
+      - /mnt/NVME/docker/grimmory/data:/app/data
+      - /mnt/HDD4000/data/media/books:/books
+      # BookDrop: watched folder, new files are detected and queued for import
+      - /mnt/HDD4000/data/ingest/bookdrop:/bookdrop
+    ports:
+      - 6060:6060
+    depends_on:
+      grimmory-db:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.grimmory.rule=Host(`grimmory.local.watermarkhu.nl`)
+      - traefik.http.routers.grimmory.entrypoints=https
+      - traefik.http.routers.grimmory.tls=true
+      - traefik.http.services.grimmory.loadbalancer.server.port=6060
+    networks:
+      - proxy
+      - grimmory
+
+  grimmory-db:
+    image: lscr.io/linuxserver/mariadb:11.4.8
+    container_name: grimmory-db
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=grimmory
+      - MYSQL_USER=grimmory
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - /mnt/NVME/docker/grimmory/db:/config
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - grimmory
+
+  shelfmark:
+    image: ghcr.io/calibrain/shelfmark:latest
+    container_name: shelfmark
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+      - AUTH_METHOD=none
+      - CALIBRE_WEB_URL=https://grimmory.local.watermarkhu.nl
+    volumes:
+      - /mnt/NVME/docker/shelfmark-config:/config
+      # Downloads land in Grimmory's BookDrop folder
+      - /mnt/HDD4000/data/ingest/bookdrop:/books
+      # Same paths as qbittorrent / sabnzbd, so completed downloads can be picked up
+      - /mnt/HDD4000/data/torrents:/data/torrents
+      - /mnt/HDD4000/data/usenet/complete:/data/usenet/complete
+    ports:
+      - 8084:8084
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.shelfmark.rule=Host(`shelfmark.local.watermarkhu.nl`)
+      - traefik.http.routers.shelfmark.entrypoints=https
+      - traefik.http.routers.shelfmark.tls=true
+      - traefik.http.services.shelfmark.loadbalancer.server.port=8084
+    networks:
+      - proxy
+      - grimmory
+networks:
+  proxy:
+    external: true
+  grimmory: {}
