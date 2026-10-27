@@ -1,6 +1,6 @@
 services:
   grimmory:
-    image: ghcr.io/grimmory-tools/grimmory:latest
+    image: ghcr.io/grimmory-tools/grimmory:latest@sha256:bf6fe21c6e247597f7869664a440b5a34242e2d2940575cae39c17bfaa66dc0b
     container_name: grimmory
     environment:
       - USER_ID=1000
@@ -33,7 +33,7 @@ services:
       - grimmory
 
   grimmory-db:
-    image: lscr.io/linuxserver/mariadb:11.4.8
+    image: lscr.io/linuxserver/mariadb:11.4.8@sha256:91de7f701bc7fc3a424b81beafca7a7c6c4c5b7c8be6afd2ae148698695c0b0c
     container_name: grimmory-db
     environment:
       - PUID=1000
@@ -55,7 +55,7 @@ services:
       - grimmory
 
   shelfmark:
-    image: ghcr.io/calibrain/shelfmark:latest
+    image: ghcr.io/calibrain/shelfmark:latest@sha256:acfa46b8be80f1e2f084a7703ff027ab274397feb24006114e92c05c140b62c3
     container_name: shelfmark
     environment:
       - PUID=1000
