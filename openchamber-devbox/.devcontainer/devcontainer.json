@@ -1,0 +1,21 @@
+{
+  "name": "OpenChamber devbox",
+  "dockerComposeFile": "../compose.yaml",
+  "service": "devbox",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "dev",
+  "updateRemoteUserUID": false,
+  // Attach only; VS Code must never stop the long-running service.
+  "shutdownAction": "none",
+  "forwardPorts": [3000],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "hverlin.mise-vscode",
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "FedaykinDev.openchamber"
+      ]
+    }
+  }
+}
