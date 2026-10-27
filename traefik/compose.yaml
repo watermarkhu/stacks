@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   traefik:
     image: traefik:latest@sha256:1336e85aaed293bd63d005086e0dd013b04078b26aaeb1c18b26a2f928af7e65
     container_name: traefik
     restart: unless-stopped
+    logging: *default-logging
     security_opt:
       - no-new-privileges:true
     networks:

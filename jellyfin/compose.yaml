@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest@sha256:3894d9eae88418d3cf9ac6349392d2c4dad818365a59565d19edc38098897044
@@ -18,6 +24,7 @@ services:
       - 7359:7359/udp #optional
       - 1900:1900/udp #optional
     restart: unless-stopped
+    logging: *default-logging
     labels:
       - traefik.enable=true
       - traefik.http.routers.jellyfin.rule=Host(`jellyfin.local.watermarkhu.nl`)

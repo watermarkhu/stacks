@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   couchdb-obsidian-livesync:
     image: docker.io/oleduc/docker-obsidian-livesync-couchdb:master@sha256:4839ce30ebf1040b406ce1ab495d7b0bc7b62fe31fc6766cedabc513b5cc847b
     container_name: couchdb-obsidian-livesync
     restart: always
+    logging: *default-logging
     environment:
       SERVER_URL: https://obsidian.local.watermarkhu.nl
       COUCHDB_USER: admin

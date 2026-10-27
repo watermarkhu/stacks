@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   ha-wa-bridge:
     image: ghcr.io/raulpetruta/ha-wa-bridge:latest@sha256:99435f06c97ebfd0491304ac7b5aae88710c35be933bd431c78c2f4bd39ba06a
     container_name: ha-wa-bridge
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - 3000:3000
     volumes:

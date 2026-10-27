@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   dockhand:
     image: fnsys/dockhand:latest@sha256:039fbb65899f5ecc1d63083736d94587306b35736bca666eca623416859ddaa5
     container_name: dockhand
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - 3001:3000
     volumes:

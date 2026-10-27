@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   jellyseerr:
     image: ghcr.io/seerr-team/seerr:latest@sha256:d8fab675b55ad293ded98fd71efcfd46054cbad9746534ae1cc4794a88c0b3be
@@ -11,6 +17,7 @@ services:
     volumes:
       - /mnt/NVME/docker/jellyseerr-config:/app/config
     restart: unless-stopped
+    logging: *default-logging
     labels:
       - traefik.enable=true
       - traefik.http.routers.jellyseerr.rule=Host(`request.local.watermarkhu.nl`)

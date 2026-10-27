@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   grimmory:
     image: ghcr.io/grimmory-tools/grimmory:latest@sha256:bf6fe21c6e247597f7869664a440b5a34242e2d2940575cae39c17bfaa66dc0b
@@ -21,6 +27,7 @@ services:
       grimmory-db:
         condition: service_healthy
     restart: unless-stopped
+    logging: *default-logging
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
@@ -46,11 +53,13 @@ services:
     volumes:
       - /mnt/NVME/docker/grimmory/db:/config
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
-      interval: 5s
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" --silent"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
+    logging: *default-logging
     networks:
       - grimmory
 
@@ -73,6 +82,7 @@ services:
     ports:
       - 8084:8084
     restart: unless-stopped
+    logging: *default-logging
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy

@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest@sha256:75ecbb1c89ab7b0a21c4bde40b4820e4f1649d2d56d83b91913422155e8d2a5f
@@ -14,6 +20,15 @@ services:
       - 6881:6881
       - 6881:6881/udp
     restart: unless-stopped
+    stop_grace_period: 30s
+    # TCP check: the WebUI may reject HTTP requests with host-header validation enabled
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8090"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
     labels:
       - traefik.enable=true
       - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.local.watermarkhu.nl`)

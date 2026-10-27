@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   sabnzbd:
     image: lscr.io/linuxserver/sabnzbd:latest@sha256:3ac1c9ea03bafa2588dd8acdcb809857bae305e71d2d90e11d689c78076a9c01
@@ -11,6 +17,14 @@ services:
     ports:
       - 8080:8080
     restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
     labels:
       - traefik.enable=true
       - traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.local.watermarkhu.nl`)
