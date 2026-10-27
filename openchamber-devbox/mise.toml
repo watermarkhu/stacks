@@ -1,0 +1,29 @@
+# Toolchain for the OpenChamber devbox.
+#
+# Copied into the image as mise's system config (/etc/mise/config.toml) and
+# also bind-mounted over it by compose.yaml, so changing a tool here only
+# needs `docker compose restart devbox`, not a rebuild.
+#
+# Versions are pinned on purpose: Renovate's `mise` manager only bumps exact
+# versions, never `latest` / `lts`. For an ad-hoc bump, run
+# `mise outdated --bump` in the container to see what is newer, edit this file
+# on the host and restart (or just merge the Renovate PR).
+#
+# OpenCode 2 is published as @opencode/cli; the old opencode-ai package only
+# carries OpenCode 1, which OpenChamber 2.5+ refuses (it needs OpenCode >= 2.1).
+#
+# node must stay >= 24.14 (required by @openchamber/web) and is installed
+# first by entrypoint.sh because the npm: tools need it.
+#
+# mise's npm backend skips dependency install scripts unless they are listed in
+# allow_builds. @opencode/cli links its platform binary in postinstall, and
+# node-pty builds/fixes its native terminal helper. After changing allow_builds
+# on an installed version, run `mise install -f <tool>` in the container.
+
+[tools]
+node = "24.22.1"
+bun = "1.4.4"
+uv = "0.13.6"
+ruff = "0.17.3"
+"npm:@opencode/cli" = { version = "2.2.0", allow_builds = ["@opencode/cli"] }
+"npm:@openchamber/web" = { version = "2.5.2", allow_builds = ["node-pty"] }

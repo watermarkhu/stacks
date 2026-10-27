@@ -1,0 +1,55 @@
+name: openchamber
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  devbox:
+    build:
+      context: .
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: openchamber
+    init: true
+    restart: unless-stopped
+    logging: *default-logging
+    env_file: .env
+    environment:
+      - TZ=Europe/Amsterdam
+    # Never default to 0.0.0.0: set BIND_ADDR to 127.0.0.1 (Traefik only) or the Tailscale IP.
+    # 3000 / 3001 on the host are taken by ha-wa-bridge / dockhand, hence 3002.
+    ports:
+      - ${BIND_ADDR:-127.0.0.1}:${HOST_PORT:-3002}:3000
+    volumes:
+      # Edit mise.toml + `docker compose restart devbox` to change tools, no rebuild needed.
+      - ./mise.toml:/etc/mise/config.toml:ro
+      # Tools, OpenCode auth + sessions, OpenChamber settings, SSH keys, dotfiles.
+      - home:/home/dev
+      - ${WORKSPACE_DIR:-./workspace}:/workspace
+    healthcheck:
+      # Any HTTP response is healthy (the UI answers 401/redirects before login).
+      test: ["CMD", "curl", "-sS", "-o", "/dev/null", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # The first start installs the whole toolchain.
+      start_period: 5m
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.openchamber.rule=Host(`openchamber.local.watermarkhu.nl`)
+      - traefik.http.routers.openchamber.entrypoints=https
+      - traefik.http.routers.openchamber.tls=true
+      - traefik.http.services.openchamber.loadbalancer.server.port=3000
+    networks:
+      - proxy
+
+volumes:
+  home: {}
+
+networks:
+  proxy:
+    external: true
