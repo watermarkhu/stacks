@@ -1,0 +1,24 @@
+services:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - TZ=Europe/Amsterdam
+    volumes:
+      - /mnt/NVME/docker/sabnzbd-config:/config
+      - /mnt/HDD4000/data/usenet/complete:/data/usenet/complete
+      - /mnt/HDD4000/data/usenet/incomplete:/data/usenet/incomplete
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.local.watermarkhu.nl`)
+      - traefik.http.routers.sabnzbd.entrypoints=https
+      - traefik.http.routers.sabnzbd.tls=true
+      - traefik.http.services.sabnzbd.loadbalancer.server.port=8080
+    networks:
+      - proxy
+networks:
+  proxy:
+    external: true

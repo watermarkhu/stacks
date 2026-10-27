@@ -1,0 +1,22 @@
+services:
+  dockhand:
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    restart: unless-stopped
+    ports:
+      - 3001:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/NVME/docker/dockhand:/app/data
+      - /mnt/NVME/docker/stacks:/app/stacks
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dockhand.rule=Host(`dockhand.local.watermarkhu.nl`)
+      - traefik.http.routers.dockhand.entrypoints=https
+      - traefik.http.routers.dockhand.tls=true
+      - traefik.http.services.dockhand.loadbalancer.server.port=3000
+    networks:
+      - proxy
+networks:
+  proxy:
+    external: true

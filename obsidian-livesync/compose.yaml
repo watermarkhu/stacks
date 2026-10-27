@@ -1,0 +1,25 @@
+services:
+  couchdb-obsidian-livesync:
+    image: docker.io/oleduc/docker-obsidian-livesync-couchdb:master
+    container_name: couchdb-obsidian-livesync
+    restart: always
+    environment:
+      SERVER_URL: https://obsidian.local.watermarkhu.nl
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: obsidian
+      COUCHDB_DATABASE: obsidian
+    ports:
+      - ${COUCHDB_PORT:-5984}:5984
+    volumes:
+      - /mnt/NVME/docker/obsidian-couchdb-data:/opt/couchdb/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.obsidian.rule=Host(`obsidian.local.watermarkhu.nl`)
+      - traefik.http.routers.obsidian.entrypoints=https
+      - traefik.http.routers.obsidian.tls=true
+      - traefik.http.services.obsidian.loadbalancer.server.port=5984
+    networks:
+      - proxy
+networks:
+  proxy:
+    external: true

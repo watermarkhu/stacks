@@ -1,0 +1,27 @@
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - TZ=Europe/Amsterdam
+      - WEBUI_PORT=8090
+      - TORRENTING_PORT=6881
+    volumes:
+      - /mnt/NVME/docker/qbittorrent-config:/config
+      - /mnt/HDD4000/data/torrents:/data/torrents
+    ports:
+      - 8090:8090
+      - 6881:6881
+      - 6881:6881/udp
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.local.watermarkhu.nl`)
+      - traefik.http.routers.qbittorrent.entrypoints=https
+      - traefik.http.routers.qbittorrent.tls=true
+      - traefik.http.services.qbittorrent.loadbalancer.server.port=8090
+    networks:
+      - proxy
+networks:
+  proxy:
+    external: true

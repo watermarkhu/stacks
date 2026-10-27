@@ -1,0 +1,26 @@
+services:
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    environment:
+      - PUID=0
+      - TZ=Europe/Amsterdam
+      - PROXY_DOMAIN=code-server.my.domain #optional
+      - DEFAULT_WORKSPACE=/mnt/data #optional
+    volumes:
+      - /mnt/NVME/docker/code-server-config:/config
+      - /mnt/NVME/docker:/mnt/docker
+    ports:
+      - 8443:8443
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.code.rule=Host(`code.local.watermarkhu.nl`)
+      - traefik.http.routers.code.entrypoints=https
+      - traefik.http.routers.code.tls=true
+      - traefik.http.services.code.loadbalancer.server.port=8443
+    networks:
+      - proxy
+networks:
+  proxy:
+    external: true

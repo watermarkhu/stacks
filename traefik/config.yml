@@ -1,0 +1,107 @@
+http:
+ #region routers 
+  routers:
+    truenas:
+      entryPoints:
+        - "https"
+      rule: "Host(`truenas.local.watermarkhu.nl`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: truenas
+    immich:
+      entryPoints:
+        - "https"
+      rule: "Host(`photos.local.watermarkhu.nl`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: immich
+    nextcloud:
+      entryPoints:
+        - "https"
+      rule: "Host(`cloud.local.watermarkhu.nl`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: nextcloud
+    dockge:
+      entryPoints:
+        - "https"
+      rule: "Host(`dockge.local.watermarkhu.nl`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: dockge
+    ollama:
+      entryPoints:
+        - "https"
+      rule: "Host(`ollama.local.watermarkhu.nl`)"
+      middlewares:
+        - default-headers
+        - https-redirectscheme
+      tls: {}
+      service: ollama
+#endregion
+#region services
+  services:
+    truenas:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.10:81"
+        passHostHeader: true
+    immich:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.10:30041"
+        passHostHeader: true
+    nextcloud:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.10:30027"
+        passHostHeader: true
+    dockge:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.10:5001"
+        passHostHeader: true
+    ollama:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.10:30068"
+        passHostHeader: true
+#endregion
+  middlewares:
+    https-redirectscheme:
+      redirectScheme:
+        scheme: https
+        permanent: true
+    default-headers:
+      headers:
+        frameDeny: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 15552000
+        customFrameOptionsValue: SAMEORIGIN
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+
+    default-whitelist:
+      ipAllowList:
+        sourceRange:
+        - "10.0.0.0/8"
+        - "192.168.0.0/16"
+        - "172.16.0.0/12"
+
+    secured:
+      chain:
+        middlewares:
+        - default-whitelist
+        - default-headers

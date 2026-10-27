@@ -1,0 +1,20 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: ['config:recommended'],
+
+  packageRules: [
+    {
+      // Low-risk updates: merge without review
+      matchManagers: ['docker-compose'],
+      matchUpdateTypes: ['patch', 'digest'],
+      automerge: true,
+    },
+    {
+      // Major bumps (Postgres, Immich, ...) always need a look
+      matchManagers: ['docker-compose'],
+      matchUpdateTypes: ['major'],
+      automerge: false,
+      labels: ['major-update'],
+    },
+  ],
+}

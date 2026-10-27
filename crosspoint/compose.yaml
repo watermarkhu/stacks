@@ -1,0 +1,24 @@
+services:
+  crosspoint-sync:
+    image: ghcr.io/crosspoint-reader/crosspoint-sync:main
+    ports:
+      - 8888:8080
+    volumes:
+      - /mnt/NVME/docker/crosspoint:/data
+    environment:
+      BASE_PATH: ${BASE_PATH:-}
+      # Set to "true" on private instances once your accounts exist.
+      REGISTRATION_DISABLED: "false"
+      TRUST_PROXY: "true"
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.crosspoint.rule=Host(`crosspoint.local.watermarkhu.nl`)
+      - traefik.http.routers.crosspoint.entrypoints=https
+      - traefik.http.routers.crosspoint.tls=true
+      - traefik.http.services.crosspoint.loadbalancer.server.port=8080
+    networks:
+      - proxy
+networks:
+  proxy:
+    external: true
