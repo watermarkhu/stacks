@@ -1,6 +1,6 @@
 services:
   crosspoint-sync:
-    image: ghcr.io/crosspoint-reader/crosspoint-sync:main
+    image: ghcr.io/crosspoint-reader/crosspoint-sync:main@sha256:f04a3bd78a1e28cd5d21df53e4b8235711da51dff732210f08c86573f95ee9ae
     ports:
       - 8888:8080
     volumes:
