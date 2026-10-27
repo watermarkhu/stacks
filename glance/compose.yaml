@@ -22,6 +22,46 @@ services:
       - traefik.http.services.glance.loadbalancer.server.port=8080
     networks:
       - proxy
+
+  # Editor for the Glance config, served at glance.local.watermarkhu.nl/edit/
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest@sha256:4524d0b00478e41264f42e0e660c1819e3b7d0c460f78ce73e44fa39b2b55134
+    container_name: code-server
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=Europe/Amsterdam
+      - DEFAULT_WORKSPACE=/workspace
+    volumes:
+      - /mnt/NVME/docker/glance-code-server-config:/config
+      - /mnt/NVME/docker/glance-config:/workspace
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8443/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.glance-edit.rule=Host(`glance.local.watermarkhu.nl`) && PathPrefix(`/edit/`)
+      - traefik.http.routers.glance-edit.entrypoints=https
+      - traefik.http.routers.glance-edit.tls=true
+      - traefik.http.routers.glance-edit.priority=100
+      - traefik.http.routers.glance-edit.middlewares=glance-edit-strip
+      - traefik.http.middlewares.glance-edit-strip.stripprefix.prefixes=/edit
+      - traefik.http.services.glance-edit.loadbalancer.server.port=8443
+      # /edit -> /edit/ so code-server's relative asset paths resolve correctly
+      - traefik.http.routers.glance-edit-slash.rule=Host(`glance.local.watermarkhu.nl`) && Path(`/edit`)
+      - traefik.http.routers.glance-edit-slash.entrypoints=https
+      - traefik.http.routers.glance-edit-slash.tls=true
+      - traefik.http.routers.glance-edit-slash.priority=110
+      - traefik.http.routers.glance-edit-slash.middlewares=glance-edit-slash
+      - traefik.http.middlewares.glance-edit-slash.redirectregex.regex=^(.*)/edit$$
+      - traefik.http.middlewares.glance-edit-slash.redirectregex.replacement=$${1}/edit/
+    networks:
+      - proxy
 networks:
   proxy:
     external: true
