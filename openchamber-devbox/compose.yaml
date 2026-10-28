@@ -7,7 +7,7 @@ x-logging: &default-logging
     max-file: "3"
 
 services:
-  devbox:
+  openchamber:
     build:
       context: .
       args:
@@ -25,11 +25,11 @@ services:
     ports:
       - ${BIND_ADDR:-127.0.0.1}:${HOST_PORT:-3002}:3000
     volumes:
-      # Edit mise.toml + `docker compose restart devbox` to change tools, no rebuild needed.
+      # Edit mise.toml + `docker compose restart openchamber` to change tools, no rebuild needed.
       - ./mise.toml:/etc/mise/config.toml:ro
       # Tools, OpenCode auth + sessions, OpenChamber settings, SSH keys, dotfiles.
       - home:/home/dev
-      - ${WORKSPACE_DIR:-./workspace}:/workspace
+      - home:/workspace
     healthcheck:
       # Any HTTP response is healthy (the UI answers 401/redirects before login).
       test: ["CMD", "curl", "-sS", "-o", "/dev/null", "http://localhost:3000"]
@@ -47,7 +47,7 @@ services:
     networks:
       - proxy
 
-  code-server:
+  code:
     image: lscr.io/linuxserver/code-server:latest@sha256:4524d0b00478e41264f42e0e660c1819e3b7d0c460f78ce73e44fa39b2b55134
     restart: unless-stopped
     logging: *default-logging
@@ -59,7 +59,8 @@ services:
       DEFAULT_WORKSPACE: /workspace
     volumes:
       - code_server_config:/config
-      - ${WORKSPACE_DIR:-./workspace}:/workspace
+      - home:/home/dev
+      - home:/workspace
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8443/healthz"]
       interval: 30s
@@ -76,7 +77,15 @@ services:
       - proxy
 
 volumes:
-  home: {}
+  home:
+    # Back the shared devbox/code-server home with the external dataset.
+    # Use a new volume name so the existing openchamber_home volume remains available for migration.
+    name: openchamber_home_dataset
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${WORKSPACE_DIR:?Set WORKSPACE_DIR in .env or Dockhand}
   code_server_config: {}
 
 networks:

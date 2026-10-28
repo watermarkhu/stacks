@@ -1,7 +1,7 @@
 {
   "name": "OpenChamber devbox",
   "dockerComposeFile": "../compose.yaml",
-  "service": "devbox",
+  "service": "openchamber",
   "workspaceFolder": "/workspace",
   "remoteUser": "dev",
   "updateRemoteUserUID": false,
