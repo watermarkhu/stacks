@@ -21,7 +21,7 @@
 # on an installed version, run `mise install -f <tool>` in the container.
 
 [tools]
-node = "24.22.1"
+node = "26.13.0"
 bun = "1.4.4"
 uv = "0.13.6"
 ruff = "0.17.3"
