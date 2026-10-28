@@ -12,7 +12,7 @@ A long-lived dev container for the home server. It runs [OpenChamber](https://op
 | --- | --- |
 | `Dockerfile` | `debian:trixie-slim` with OS packages, system-wide mise and the `dev` user (UID/GID from build args) |
 | `entrypoint.sh` | Sets git identity, runs `mise install`, then starts OpenChamber (or `exec`s the given command) |
-| `mise.toml` | The toolchain: node, bun, uv, ruff, gh, OpenCode, OpenChamber. Mounted as `/etc/mise/config.toml` |
+| `mise.toml` | The toolchain. Mounted as `/etc/mise/config.toml` |
 | `compose.yaml` | Stack `openchamber`, service `devbox`. Traefik labels, `home` volume, workspace bind mount |
 | `.env.example` | Template for `.env`, which holds the password, bind address, UID/GID and git identity |
 | `.devcontainer/devcontainer.json` | Lets VS Code attach to the running service without ever stopping it |
