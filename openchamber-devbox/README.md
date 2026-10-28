@@ -1,8 +1,9 @@
 # openchamber-devbox
 
-A long-lived dev container for the home server. It runs [OpenChamber](https://openchamber.dev), the web UI for the [OpenCode](https://opencode.ai) agent. Its toolchain is declared in `mise.toml`, and VS Code can attach to it as a devcontainer.
+A long-lived dev container for the home server. It runs [OpenChamber](https://openchamber.dev), the web UI for the [OpenCode](https://opencode.ai) agent, and code-server for browser-based editing. Its toolchain is declared in `mise.toml`, and VS Code can attach to it as a devcontainer.
 
 - Reachable over the LAN/VPN only: via Traefik at `https://openchamber.local.watermarkhu.nl`, or directly on `BIND_ADDR:HOST_PORT`.
+- code-server is available at `https://code.local.watermarkhu.nl` and opens the same `WORKSPACE_DIR` mounted at `/workspace`.
 - Tools, OpenCode logins and sessions, SSH keys and dotfiles live in the `home` volume. They survive restarts and image rebuilds.
 - Projects live in `WORKSPACE_DIR` on the host, mounted at `/workspace`, and are owned by your host user.
 
@@ -11,10 +12,10 @@ A long-lived dev container for the home server. It runs [OpenChamber](https://op
 | Path | Purpose |
 | --- | --- |
 | `Dockerfile` | `debian:trixie-slim` with OS packages, system-wide mise and the `dev` user (UID/GID from build args) |
-| `entrypoint.sh` | Sets git identity, runs `mise install`, then starts OpenChamber (or `exec`s the given command) |
+| `entrypoint.sh` | Sets git identity, installs mise tools and the matching Playwright Chromium, then starts OpenChamber (or `exec`s the given command) |
 | `mise.toml` | The toolchain. Mounted as `/etc/mise/config.toml` |
-| `compose.yaml` | Stack `openchamber`, service `devbox`. Traefik labels, `home` volume, workspace bind mount |
-| `.env.example` | Template for `.env`, which holds the password, bind address, UID/GID and git identity |
+| `compose.yaml` | Stack `openchamber`, services `devbox` and `code-server`. Traefik labels, persistent config volumes and shared workspace bind mounts |
+| `.env.example` | Template for `.env`, which holds both UI passwords, bind address, UID/GID and git identity |
 | `.devcontainer/devcontainer.json` | Lets VS Code attach to the running service without ever stopping it |
 | `workspace/` | Default `WORKSPACE_DIR` (git-ignored). On the server, `.env` points elsewhere |
 
@@ -25,15 +26,15 @@ Renovate is configured in the repository's root `renovate.json5`.
 ```sh
 cd openchamber-devbox
 cp .env.example .env
-$EDITOR .env                 # OPENCHAMBER_UI_PASSWORD, UID/GID (id -u / id -g), WORKSPACE_DIR, git identity
+$EDITOR .env                 # both UI passwords, UID/GID (id -u / id -g), WORKSPACE_DIR, git identity
 mkdir -p workspace           # or the WORKSPACE_DIR you set, owned by your user
 docker compose up -d --build
 docker compose logs -f       # first start installs the toolchain (a minute or two)
 ```
 
-The container is `healthy` once OpenChamber answers on port 3000. If `OPENCHAMBER_UI_PASSWORD` is missing, the container exits with an error rather than serving an unprotected UI.
+OpenChamber is `healthy` once it answers on port 3000. Set both `OPENCHAMBER_UI_PASSWORD` and `CODE_SERVER_PASSWORD`; code-server requires its password at Compose startup, and OpenChamber exits rather than serving if its password is missing. Existing `.env` files must add `CODE_SERVER_PASSWORD` before starting the new service.
 
-The stack joins the external `proxy` network like the other stacks, so Traefik serves it at `https://openchamber.local.watermarkhu.nl`. It needs no host port for that. For direct VPN access, set `BIND_ADDR` to the server's Tailscale IP (`tailscale ip -4`). Ports 3000 and 3001 are taken by ha-wa-bridge and Dockhand, so `HOST_PORT` defaults to 3002.
+The stack joins the external `proxy` network like the other stacks, so Traefik serves OpenChamber at `https://openchamber.local.watermarkhu.nl` and code-server at `https://code.local.watermarkhu.nl`. Neither service needs a host port for that. For direct VPN access to OpenChamber, set `BIND_ADDR` to the server's Tailscale IP (`tailscale ip -4`). Ports 3000 and 3001 are taken by ha-wa-bridge and Dockhand, so `HOST_PORT` defaults to 3002.
 
 Traefik needs no special configuration: it proxies WebSockets and streams SSE unbuffered by default.
 
@@ -76,6 +77,27 @@ docker compose restart devbox
 docker compose ps                           # health status
 ```
 
+### Playwright MCP
+
+OpenCode uses `bunx` to fetch the Playwright MCP package and its JavaScript dependencies on demand; the package is not pinned in `mise.toml`. `bunx` does not install the browser binary, so the entrypoint separately installs Chromium and its Linux dependencies using the Playwright version required by the latest MCP package. The browser cache persists in the `home` volume. The first startup may take longer while Chromium is downloaded; later starts check for browser updates. Rebuild the image once when deploying this entrypoint change (`docker compose up -d --build`).
+
+To enable it, add this to `/home/dev/.config/opencode/opencode.json` inside the container (or merge it into the existing config), then restart the devbox:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["bunx", "@playwright/mcp@latest", "--headless", "--no-sandbox"],
+      "enabled": true
+    }
+  }
+}
+```
+
+Playwright MCP can access websites and interact with authenticated sessions, so only enable it when needed.
+
 VS Code: open this directory and run **Dev Containers: Reopen in Container**, or use Remote-SSH to the server first. VS Code attaches to the running `devbox` service and never stops it (`shutdownAction: none`).
 
 ## Updating
@@ -101,5 +123,6 @@ Toolchain PRs take effect on the next `docker compose restart devbox` after Dock
 
 - `dev` has passwordless `sudo` inside the container, so the agent can `apt-get install` things. Treat the container as fully controlled by the agent. To remove sudo, delete the marked line in the `Dockerfile` and rebuild.
 - **Never mount the Docker socket** into this container. That would give the agent root on the host.
+- code-server can edit and run code in the shared workspace. Keep it behind Traefik on the private `*.local` host and use a separate strong `CODE_SERVER_PASSWORD`.
 - Keep the UI off the public internet. Use Traefik on the `*.local` domain, `127.0.0.1` or the Tailscale IP, and never bind to `0.0.0.0` or add a public route or tunnel. The UI password is the only lock on a shell that holds your provider credentials.
 - Provider keys in `.env` are visible to every process in the container, including the agent. Prefer `opencode auth login` with scoped keys.

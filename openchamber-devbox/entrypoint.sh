@@ -27,6 +27,25 @@ mise install
 mise reshim
 log "mise install finished in $((SECONDS - start))s"
 
+# bunx fetches the MCP package on demand. Install Chromium using that package's
+# Playwright dependency so the browser revision stays aligned with the server.
+. /etc/os-release
+playwright_version=$(bunx --package=@playwright/mcp@latest playwright --version | awk '$1 == "Version" { print $2; exit }')
+if [[ -z "$playwright_version" ]]; then
+  log "ERROR: could not determine the Playwright version used by @playwright/mcp"
+  exit 1
+fi
+
+playwright_marker="$HOME/.cache/ms-playwright/.openchamber-${ID}-${VERSION_ID}-${playwright_version}"
+if [[ ! -f "$playwright_marker" ]]; then
+  log "installing Playwright Chromium and Linux dependencies for Playwright $playwright_version"
+  bunx --package=@playwright/mcp@latest playwright install --with-deps chromium
+  mkdir -p "$(dirname "$playwright_marker")"
+  touch "$playwright_marker"
+else
+  bunx --package=@playwright/mcp@latest playwright install chromium
+fi
+
 if [[ $# -gt 0 ]]; then
   exec "$@"
 fi
