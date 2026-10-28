@@ -2,12 +2,8 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: ['config:recommended', 'docker:pinDigests'],
 
-  // The mise and dockerfile managers are enabled by default (no enabledManagers here),
-  // so openchamber-devbox/mise.toml and openchamber-devbox/Dockerfile are picked up as is.
   customManagers: [
     {
-      // `# renovate: datasource=... depName=...` comments above ARG/ENV lines in Dockerfiles,
-      // e.g. MISE_VERSION in openchamber-devbox/Dockerfile.
       customType: 'regex',
       managerFilePatterns: ['/(^|/)Dockerfile$/'],
       matchStrings: [
@@ -18,8 +14,7 @@
 
   packageRules: [
     {
-      matchManagers: ['docker-compose', 'dockerfile'],
-      matchUpdateTypes: ['patch', 'digest', 'pinDigest'],
+      matchUpdateTypes: ['minor', 'patch', 'digest', 'pinDigest'],
       automerge: true,
     },
     {
@@ -29,13 +24,11 @@
       labels: ['major-update'],
     },
     {
-      // One PR for the devbox toolchain instead of one per tool.
       matchFileNames: ['openchamber-devbox/**'],
       matchManagers: ['mise', 'custom.regex'],
       groupName: 'openchamber devbox toolchain',
     },
     {
-      // @openchamber/web requires node >= 24.14; take node majors deliberately.
       matchFileNames: ['openchamber-devbox/**'],
       matchManagers: ['mise'],
       matchPackageNames: ['node'],
