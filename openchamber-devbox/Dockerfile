@@ -3,7 +3,7 @@
 FROM debian:trixie-slim@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4
 
 # renovate: datasource=github-releases depName=jdx/mise
-ARG MISE_VERSION=2026.10.22
+ARG MISE_VERSION=2026.10.23
 ARG UID=1000
 ARG GID=1000
 
