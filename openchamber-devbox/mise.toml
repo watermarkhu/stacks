@@ -10,4 +10,4 @@ ruff = "0.17.3"
 gh = "2.103.3"
 rust = "1.99.1"
 "npm:@opencode/cli" = { version = "2.2.5", allow_builds = ["@opencode/cli"] }
-"npm:@openchamber/web" = { version = "2.5.3", allow_builds = ["node-pty"] }
+"npm:@openchamber/web" = { version = "2.6.0", allow_builds = ["node-pty"] }
