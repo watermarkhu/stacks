@@ -6,7 +6,7 @@ x-logging: &default-logging
 
 services:
   ha-wa-bridge:
-    image: ghcr.io/raulpetruta/ha-wa-bridge:latest@sha256:99435f06c97ebfd0491304ac7b5aae88710c35be933bd431c78c2f4bd39ba06a
+    image: ghcr.io/raulpetruta/ha-wa-bridge:latest@sha256:1de6122a0625210ca9a9324fa5effee88a65fdd610795b2248cbbba5dec58533
     container_name: ha-wa-bridge
     restart: unless-stopped
     logging: *default-logging
