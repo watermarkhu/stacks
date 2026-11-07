@@ -14,11 +14,14 @@
 
   packageRules: [
     {
+      matchManagers: ['docker-compose'],
+      pinDigests: true,
+    },
+    {
       matchUpdateTypes: ['minor', 'patch', 'digest', 'pinDigest'],
       automerge: true,
     },
     {
-      matchManagers: ['docker-compose', 'dockerfile'],
       matchUpdateTypes: ['major'],
       automerge: false,
       labels: ['major-update'],
