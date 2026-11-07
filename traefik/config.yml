@@ -28,15 +28,6 @@ http:
         - https-redirectscheme
       tls: {}
       service: nextcloud
-    dockge:
-      entryPoints:
-        - "https"
-      rule: "Host(`dockge.local.watermarkhu.nl`)"
-      middlewares:
-        - default-headers
-        - https-redirectscheme
-      tls: {}
-      service: dockge
     ollama:
       entryPoints:
         - "https"
@@ -63,11 +54,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://192.168.0.10:30027"
-        passHostHeader: true
-    dockge:
-      loadBalancer:
-        servers:
-          - url: "http://192.168.0.10:5001"
         passHostHeader: true
     ollama:
       loadBalancer:
