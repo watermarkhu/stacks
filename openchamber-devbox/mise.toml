@@ -5,9 +5,9 @@
 [tools]
 node = "26.13.1"
 bun = "1.4.4"
-uv = "0.13.7"
-ruff = "0.17.4"
-gh = "2.103.3"
-rust = "1.99.1"
+uv = "0.13.8"
+ruff = "0.17.5"
+gh = "2.104.0"
+rust = "1.100.0"
 "npm:@opencode/cli" = { version = "2.2.7", allow_builds = ["@opencode/cli"] }
-"npm:@openchamber/web" = { version = "2.7.0", allow_builds = ["node-pty"] }
+"npm:@openchamber/web" = { version = "2.7.1", allow_builds = ["node-pty"] }
