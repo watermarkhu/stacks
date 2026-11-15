@@ -17,9 +17,13 @@ services:
     init: true
     restart: unless-stopped
     logging: *default-logging
-    env_file: .env
     environment:
-      - TZ=Europe/Amsterdam
+      TZ: Europe/Amsterdam
+      OPENCHAMBER_UI_PASSWORD: ${OPENCHAMBER_UI_PASSWORD:?Set OPENCHAMBER_UI_PASSWORD in Dockhand}
+      GIT_USER_NAME: ${GIT_USER_NAME:-}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     # Never default to 0.0.0.0: set BIND_ADDR to 127.0.0.1 (Traefik only) or the Tailscale IP.
     # 3000 / 3001 on the host are taken by ha-wa-bridge / dockhand, hence 3002.
     ports:
@@ -55,7 +59,7 @@ services:
       PUID: ${UID:-1000}
       PGID: ${GID:-1000}
       TZ: Europe/Amsterdam
-      PASSWORD: "${CODE_SERVER_PASSWORD:?Set CODE_SERVER_PASSWORD in .env}"
+      PASSWORD: "${CODE_SERVER_PASSWORD:?Set CODE_SERVER_PASSWORD in Dockhand}"
       DEFAULT_WORKSPACE: /workspace
     volumes:
       - code_server_config:/config
