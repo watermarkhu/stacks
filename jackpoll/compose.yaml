@@ -9,11 +9,10 @@ x-logging: &default-logging
 # Cloudflare Tunnel (cloudflared). No host ports, no Traefik, no certificates:
 # Cloudflare terminates TLS at its edge.
 #
-# Configure the tunnel's Public Hostnames in Cloudflare Zero Trust
-# (Networks -> Tunnels -> <tunnel> -> Public Hostname), most specific first:
+# The tunnel `jackpoll` (remotely managed in Cloudflare Zero Trust) routes, most specific first:
 #   jackpoll.watermarkhu.nl  path ^/(collab|results)-ws  -> http://backend:8080
 #   jackpoll.watermarkhu.nl                              -> http://frontend:3000
-#   jackpoll-auth.watermarkhu.nl                         -> http://keycloak:8080
+# Keycloak is deliberately NOT exposed: the backend reaches it at keycloak:8080.
 # postgres, redis, minio, mailpit and ntfy are internal only.
 
 services:
@@ -94,6 +93,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-https://jackpoll.watermarkhu.nl}
       SURVEY_SPAM_SECRET: ${SURVEY_SPAM_SECRET:?set SURVEY_SPAM_SECRET in jackpoll/.env}
       EMAIL_CODE_SECRET: ${EMAIL_CODE_SECRET:?set EMAIL_CODE_SECRET in jackpoll/.env}
+      # Newer backend images require it (survey.mail.unsubscribe-secret); not yet in the upstream self-host files.
+      SURVEY_MAIL_UNSUBSCRIBE_SECRET: ${SURVEY_MAIL_UNSUBSCRIBE_SECRET:?set SURVEY_MAIL_UNSUBSCRIBE_SECRET in jackpoll/.env}
       RATE_LIMIT_BACKEND: ${RATE_LIMIT_BACKEND:-redis}
       REDIS_URL: redis://redis:6379
       CLAMAV_ENABLED: ${CLAMAV_ENABLED:-false}
