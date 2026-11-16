@@ -1,0 +1,244 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Jackpoll self-host stack (https://github.com/jackpoll-org/jackpoll-selfhost),
+# adapted from docker-compose.simple.yml for plain `docker compose` behind a
+# Cloudflare Tunnel (cloudflared). No host ports, no Traefik, no certificates:
+# Cloudflare terminates TLS at its edge.
+#
+# Configure the tunnel's Public Hostnames in Cloudflare Zero Trust
+# (Networks -> Tunnels -> <tunnel> -> Public Hostname), most specific first:
+#   jackpoll.watermarkhu.nl  path ^/(collab|results)-ws  -> http://backend:8080
+#   jackpoll.watermarkhu.nl                              -> http://frontend:3000
+#   jackpoll-auth.watermarkhu.nl                         -> http://keycloak:8080
+# postgres, redis, minio, mailpit and ntfy are internal only.
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    logging: *default-logging
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in jackpoll/.env}
+    depends_on:
+      - frontend
+      - keycloak
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:2000", "ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - internal
+      - egress
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/jackpoll-org/frontend:latest}
+    restart: unless-stopped
+    logging: *default-logging
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://backend:8080
+      COLLAB_ENABLED: ${COLLAB_ENABLED:-false}
+      LIVE_RESULTS_ENABLED: ${LIVE_RESULTS_ENABLED:-true}
+      LEGAL_IMPRINT_URL: ${LEGAL_IMPRINT_URL:-}
+      LEGAL_IMPRINT_FILE: ${LEGAL_IMPRINT_FILE:-}
+      LEGAL_PRIVACY_URL: ${LEGAL_PRIVACY_URL:-}
+      LEGAL_PRIVACY_FILE: ${LEGAL_PRIVACY_FILE:-}
+      LEGAL_TERMS_URL: ${LEGAL_TERMS_URL:-}
+      LEGAL_TERMS_FILE: ${LEGAL_TERMS_FILE:-}
+      LEGAL_ENTITY: ${LEGAL_ENTITY:-}
+    volumes:
+      - ./legal:/legal:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/jackpoll-org/backend:latest}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *default-logging
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-survey}
+      DB_USERNAME: ${DB_USERNAME:-survey}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in jackpoll/.env}
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in jackpoll/.env}
+      MINIO_BUCKET: ${MINIO_BUCKET:-survey}
+      ALLOW_PUBLIC_REGISTRATION: ${ALLOW_PUBLIC_REGISTRATION:-true}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-survey-school}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-survey-backend}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set KEYCLOAK_CLIENT_SECRET in jackpoll/.env}
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in jackpoll/.env}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_TLS: ${MAIL_TLS:-DISABLED}
+      MAIL_MOCK: "false"
+      MAIL_FROM: ${MAIL_FROM:-Jackpoll <noreply@watermarkhu.nl>}
+      APP_BASE_URL: ${APP_BASE_URL:-https://jackpoll.watermarkhu.nl}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://jackpoll.watermarkhu.nl}
+      SURVEY_SPAM_SECRET: ${SURVEY_SPAM_SECRET:?set SURVEY_SPAM_SECRET in jackpoll/.env}
+      EMAIL_CODE_SECRET: ${EMAIL_CODE_SECRET:?set EMAIL_CODE_SECRET in jackpoll/.env}
+      RATE_LIMIT_BACKEND: ${RATE_LIMIT_BACKEND:-redis}
+      REDIS_URL: redis://redis:6379
+      CLAMAV_ENABLED: ${CLAMAV_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/q/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - internal
+      - egress
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *default-logging
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-survey}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in jackpoll/.env}
+      POSTGRES_DB: ${DB_NAME:-survey}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-survey} -d ${DB_NAME:-survey}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - internal
+
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    restart: unless-stopped
+    logging: *default-logging
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in jackpoll/.env}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - internal
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *default-logging
+    # Production mode behind a reverse proxy (as in the upstream Swarm stack): TLS is
+    # terminated by Cloudflare, X-Forwarded-* headers are trusted.
+    command: start --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-survey}
+      KC_DB_USERNAME: ${DB_USERNAME:-survey}
+      KC_DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in jackpoll/.env}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in jackpoll/.env}
+      # The realm import substitutes ${KEYCLOAK_CLIENT_SECRET} into the backend client.
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set KEYCLOAK_CLIENT_SECRET in jackpoll/.env}
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      # Public issuer for tokens / browser redirects. Backchannel stays on the
+      # internal network (backend -> keycloak:8080).
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-https://jackpoll-auth.watermarkhu.nl}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    logging: *default-logging
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - internal
+
+  # Internal only; catches outgoing mail. Replace with real SMTP via MAIL_* in .env.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - internal
+
+  # Internal only; UnifiedPush server. Add a tunnel hostname later if the mobile
+  # app needs it (and set NTFY_BASE_URL to the public https URL).
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    restart: unless-stopped
+    logging: *default-logging
+    command: serve
+    environment:
+      NTFY_BASE_URL: ${NTFY_BASE_URL:-http://ntfy}
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_AUTH_DEFAULT_ACCESS: "read-write"
+    volumes:
+      - ntfydata:/var/lib/ntfy
+    networks:
+      - internal
+
+networks:
+  # No outbound access: databases, keycloak, frontend and the backend talk here.
+  internal:
+    internal: true
+  # Outbound only (cloudflared -> Cloudflare, backend -> SMTP). Nothing is published.
+  egress: {}
+
+volumes:
+  pgdata:
+  miniodata:
+  ntfydata:

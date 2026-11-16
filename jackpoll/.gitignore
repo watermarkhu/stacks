@@ -1,0 +1,9 @@
+# Local secrets — never commit filled-in env files.
+.env
+.env.simple
+.env.swarm
+.env.local
+*.local
+
+# OS / editor cruft
+.DS_Store
