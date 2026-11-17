@@ -17,7 +17,7 @@ x-logging: &default-logging
 
 services:
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:latest@sha256:e613aadbc2d9511785d2e67a86b0c8ac18dd63a3f9af0d06faf04cbfdcb35f2d
     restart: unless-stopped
     logging: *default-logging
     command: tunnel --no-autoupdate --metrics 0.0.0.0:2000 run
@@ -37,7 +37,7 @@ services:
       - egress
 
   frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/jackpoll-org/frontend:latest}
+    image: ${FRONTEND_IMAGE:-ghcr.io/jackpoll-org/frontend:latest@sha256:e1c9026f1e719b6930899678f294e225314d55bd0cbea944e3cdc9f31ded0804}
     restart: unless-stopped
     logging: *default-logging
     environment:
@@ -61,7 +61,7 @@ services:
       - internal
 
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/jackpoll-org/backend:latest}
+    image: ${BACKEND_IMAGE:-ghcr.io/jackpoll-org/backend:latest@sha256:af5603078edd223588204c4f1025a8fe6cb828e54574b6f0416f86563bf8f6d9}
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *default-logging
@@ -116,7 +116,7 @@ services:
       - egress
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:81e77a4833487b8132fe4b00bedd39dc3f74b8641e387f19312a48f7de218c2e
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *default-logging
@@ -136,7 +136,7 @@ services:
       - internal
 
   minio:
-    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z@sha256:b6bfe7239bfc83fb90d31612d9704d86039dd714f7904b3f1ad68f211e602372
     restart: unless-stopped
     logging: *default-logging
     command: server /data --console-address ":9001"
@@ -155,7 +155,7 @@ services:
       - internal
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.2
+    image: quay.io/keycloak/keycloak:26.2@sha256:4883630ef9db14031cde3e60700c9a9a8eaf1b5c24db1589d6a2d43de38ba2a9
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *default-logging
@@ -195,7 +195,7 @@ services:
       - internal
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
     restart: unless-stopped
     logging: *default-logging
     command: ["redis-server", "--save", "", "--appendonly", "no"]
@@ -210,7 +210,7 @@ services:
 
   # Internal only; catches outgoing mail. Replace with real SMTP via MAIL_* in .env.
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:latest@sha256:23a2ef85bc50853ab3093645d1d64679afd8887e89da5e48a88940c172591a4e
     restart: unless-stopped
     logging: *default-logging
     networks:
@@ -219,7 +219,7 @@ services:
   # Internal only; UnifiedPush server. Add a tunnel hostname later if the mobile
   # app needs it (and set NTFY_BASE_URL to the public https URL).
   ntfy:
-    image: binwiederhier/ntfy:latest
+    image: binwiederhier/ntfy:latest@sha256:038da2be5e668fee6d36a62884eea48975e1b71c29a56964e5298c1b9165a573
     restart: unless-stopped
     logging: *default-logging
     command: serve
