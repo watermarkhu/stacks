@@ -37,7 +37,7 @@ services:
       - egress
 
   frontend:
-    image: ${FRONTEND_IMAGE:-ghcr.io/jackpoll-org/frontend:latest@sha256:e1c9026f1e719b6930899678f294e225314d55bd0cbea944e3cdc9f31ded0804}
+    image: ${FRONTEND_IMAGE:-ghcr.io/jackpoll-org/frontend:latest@sha256:32612e70dbf1affef5ff03e1eb2bfd26b235078638e2bcb0e41bed517277ea0f}
     restart: unless-stopped
     logging: *default-logging
     environment:
