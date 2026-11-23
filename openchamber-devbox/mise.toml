@@ -9,5 +9,6 @@ uv = "0.13.9"
 ruff = "0.17.5"
 gh = "2.105.0"
 rust = "1.100.0"
+claude-code = "2.1.330"
 "npm:@opencode/cli" = { version = "2.3.2", allow_builds = ["@opencode/cli"] }
 "npm:@openchamber/web" = { version = "2.7.2", allow_builds = ["node-pty"] }
