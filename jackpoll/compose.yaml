@@ -61,7 +61,7 @@ services:
       - internal
 
   backend:
-    image: ${BACKEND_IMAGE:-ghcr.io/jackpoll-org/backend:latest@sha256:d0fd1e9ff08a5a2426c61a6fa0faa156f0477b9336cfbcec68b28b1116220aad}
+    image: ${BACKEND_IMAGE:-ghcr.io/jackpoll-org/backend:latest@sha256:05f8d58e5cf4975275fc0e0570c25767e9dbe701e45c15ea6727577ab995b0b0}
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *default-logging
